@@ -5,6 +5,8 @@ from src.scoring import calculate_tag_scores
 from src.clustering import assign_primary_cluster, generate_secondary_clusters
 from src.analysis import calculate_representativeness
 
+from src.visualization import visualize_clusters
+
 def load_tags(path: str = 'tags.json') -> list[dict]:
     with open(path, 'r', encoding='utf-8') as f:
         data = json.load(f)
@@ -15,6 +17,7 @@ def main():
     input_path = 'data/input.csv'
     output_path = 'data/output.csv'
     tags_path = 'tags.json'
+    vis_output_path = 'data/cluster_visualization.png'
 
     print("Loading data...")
     if not os.path.exists(input_path):
@@ -77,6 +80,10 @@ def main():
     # I'll include '文章' for clarity unless strictly forbidden.
     
     df_final = df_combined[cols]
+
+    print("Step 5: Visualizing Clusters...")
+    # Using df_final which has '第2クラスター番号'
+    visualize_clusters(df_final, embeddings, tags, output_path=vis_output_path)
 
     print(f"Saving output to {output_path}...")
     df_final.to_csv(output_path, index=False, encoding='utf-8-sig') # utf-8-sig for Excel compatibility
