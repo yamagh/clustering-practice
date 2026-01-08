@@ -8,7 +8,10 @@ from src.analysis import calculate_representativeness
 class TestClusteringPipeline(unittest.TestCase):
     def setUp(self):
         self.texts = ["This is about money and economy.", "This is playing soccer."]
-        self.tags = ["Economy", "Sports"]
+        self.tags = [
+            {"name": "Economy", "texts": ["Economy", "Money"]},
+            {"name": "Sports", "texts": ["Sports", "Game"]}
+        ]
         
     def test_scoring_shape(self):
         df, embeddings = calculate_tag_scores(self.texts, self.tags)
@@ -16,6 +19,8 @@ class TestClusteringPipeline(unittest.TestCase):
         self.assertEqual(len(embeddings), 2)
         # Check if score for economy is higher for first text
         self.assertGreater(df.iloc[0]['Economy'], df.iloc[0]['Sports'])
+        # Check if second text (soccer) has high score for Sports
+        self.assertGreater(df.iloc[1]['Sports'], df.iloc[1]['Economy'])
 
     def test_clustering(self):
         # Mock scores

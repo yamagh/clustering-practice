@@ -5,7 +5,7 @@ from src.scoring import calculate_tag_scores
 from src.clustering import assign_primary_cluster, generate_secondary_clusters
 from src.analysis import calculate_representativeness
 
-def load_tags(path: str = 'tags.json') -> list[str]:
+def load_tags(path: str = 'tags.json') -> list[dict]:
     with open(path, 'r', encoding='utf-8') as f:
         data = json.load(f)
     return data['tags']
@@ -35,7 +35,8 @@ def main():
 
     print("Step 2: Assigning Primary Cluster...")
     # Pass only the score columns
-    primary_clusters = assign_primary_cluster(df_combined[tags])
+    tag_names = [t['name'] for t in tags]
+    primary_clusters = assign_primary_cluster(df_combined[tag_names])
     df_combined['第1クラスター番号'] = primary_clusters
 
     print("Step 3: Generating Secondary Clusters...")
@@ -67,7 +68,8 @@ def main():
     df_combined = df_combined.rename(columns={'position_score': '位置スコア'})
     
     # Reorder columns
-    cols = ['ID', '文章'] + tags + ['第1クラスター番号', '第2クラスター番号', '位置スコア']
+    # Reorder columns
+    cols = ['ID', '文章'] + tag_names + ['第1クラスター番号', '第2クラスター番号', '位置スコア']
     # Check if '文章' is needed in output? The requirement table doesn't explicitly list '文章' but says "All calculated indicators combined".
     # Usually input columns are preserved. "出力CSVには、計算されたすべての指標を結合します" (Combine all calculated indicators to output CSV).
     # The table in user request lists: ID, Tag Scores, 1st Cluster, 2nd Cluster, Position Score.
