@@ -7,7 +7,13 @@ ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
 # Install system dependencies
-RUN apt-get update && apt-get install -y wget && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y \
+    wget \
+    curl \
+    gnupg \
+    procps \
+    git \
+    && rm -rf /var/lib/apt/lists/*
 
 # Install pip requirements
 COPY requirements.txt /tmp/pip-tmp/
