@@ -4,3 +4,4 @@ sentence-transformers
 numpy
 jupyter
 matplotlib
+japanize-matplotlib

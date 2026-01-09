@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import japanize_matplotlib
 from sklearn.decomposition import PCA
 from src.scoring import get_model # Reuse the model loader if needed, or just pass embeddings
 
