@@ -7,7 +7,7 @@ import numpy as np
 from functools import lru_cache
 
 @lru_cache(maxsize=1)
-def get_model(model_name: str = 'all-MiniLM-L6-v2'):
+def get_model(model_name: str = 'sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2'):
     return SentenceTransformer(model_name)
 
 def calculate_tag_scores(texts: list[str], tags: list[dict], model=None) -> tuple[pd.DataFrame, np.ndarray]:
