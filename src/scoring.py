@@ -4,6 +4,9 @@ import pandas as pd
 import numpy as np
 
 
+from functools import lru_cache
+
+@lru_cache(maxsize=1)
 def get_model(model_name: str = 'all-MiniLM-L6-v2'):
     return SentenceTransformer(model_name)
 
