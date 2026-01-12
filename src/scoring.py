@@ -16,7 +16,7 @@ def get_model(model_name: str = 'cl-nagoya/ruri-v3-70m'):
     print(f"Loading model: {model_name}")
     return SentenceTransformer(model_name)
 
-def calculate_tag_scores(texts: list[str], tags: list[dict], model=None, model_name: str = 'cl-nagoya/ruri-v3-70m') -> tuple[pd.DataFrame, np.ndarray]:
+def calculate_tag_scores(texts: list[str], tags: list[dict], model=None, model_name: str = 'cl-nagoya/ruri-v3-70m', normalize: bool = True) -> tuple[pd.DataFrame, np.ndarray]:
     """
     タグごとに複数のキーワードを使用して、テキストとタグの間の意味的類似度スコアを計算します。
     タグのスコアは、定義されたすべてのテキストの中で最大の類似度スコアとなります。
@@ -27,6 +27,7 @@ def calculate_tag_scores(texts: list[str], tags: list[dict], model=None, model_n
               例: [{'name': 'Economy', 'texts': ['Money', 'Finance']}, ...]
         model: 事前ロードされた SentenceTransformer モデル。Noneの場合は内部でロードします。
         model_name: ロードするモデルの名前。modelがNoneの場合に使用されます。
+        normalize: コサイン類似度をMin-Max正規化するかどうか。Trueの場合、行ごとに0-1にスケールされます。
 
     Returns:
         以下のタプル:
@@ -60,24 +61,6 @@ def calculate_tag_scores(texts: list[str], tags: list[dict], model=None, model_n
     n_tags = len(tags)
     aggregated_scores = np.zeros((n_texts, n_tags))
 
-    # pandas を使用するかループ処理で効率的に行えます。
-    # n_tags が小さいため、ループ処理で十分明確です。
-    # text_to_tag_index を numpy に変換してマスキングすることもできますが、単純な反復処理が堅牢です。
-    
-    # total_n_tag_keywords が大きい場合、集計に pandas アプローチを使用する方がきれいかもしれませんが、
-    # 想定される規模を考えると生 numpy がおそらく高速です。
-    
-    # raw_similarity_matrix の列を反復処理し、対応するタグの最大スコアを更新
-    # raw_similarity_matrix の列を反復処理し、対応するタグの最大スコアを更新
-    # 変更: 最大値ではなく、上位K個の平均を取ることでロバスト性を向上 (Top-K Mean)
-    # キーワードが少ない場合は全平均、多い場合は上位3つ程度を見る
-    
-    for col_idx, tag_idx in enumerate(text_to_tag_index):
-        # ここではループで処理していますが、タグごとにまとめて処理する必要があります。
-        # 現在の構造（列ごとの反復）は max を取るには良いですが、Top-K Mean には不向きです。
-        # 構造を変更します。
-        pass # 下のループで再実装します
-
     # タグごとに処理
     for t_idx in range(n_tags):
         # このタグに対応する列のインデックスを取得
@@ -101,11 +84,37 @@ def calculate_tag_scores(texts: list[str], tags: list[dict], model=None, model_n
             
         aggregated_scores[:, t_idx] = tag_scores
 
-    # 5. DataFrame の作成
-    tag_names = [t['name'] for t in tags]
-    scores_df = pd.DataFrame(aggregated_scores, columns=tag_names)
+    if normalize:
+        # 5. 正規化処理 (Min-Max Normalization per row)
+        # 各文章について、スコアの分布を 0.0 - 1.0 に広げることで、
+        # タグ間の相対的な重要度を明確にする。
+        # raw_score の差がわずかでも、min=0, max=1 になるようにスケーリングする。
+        
+        # 行ごとの最小値と最大値を計算 (n_texts, 1)
+        row_mins = aggregated_scores.min(axis=1, keepdims=True)
+        row_maxs = aggregated_scores.max(axis=1, keepdims=True)
+        
+        # ゼロ除算を防ぐための小さなイプシロン
+        epsilon = 1e-10
+        
+        # Min-Max Normalization: (x - min) / (max - min)
+        # 差が非常に小さい（max ≈ min）場合は 0除算になる可能性があるため対策
+        ranges = row_maxs - row_mins
+        # 範囲がほぼ0の場合は、すべて0にするか、元のスコアを維持するかだが、
+        # ここでは一律に少し小さな値にするか、0にする。
+        # しかし、コサイン類似度で完全に同一になることは稀。
+        
+        # ブロードキャストで計算
+        final_scores = (aggregated_scores - row_mins) / (ranges + epsilon)
+    else:
+        # 正規化しない場合はそのまま使用
+        final_scores = aggregated_scores
     
-    # 値を 0.0 - 1.0 にクリップ
+    # 6. DataFrame の作成
+    tag_names = [t['name'] for t in tags]
+    scores_df = pd.DataFrame(final_scores, columns=tag_names)
+    
+    # 値を 0.0 - 1.0 にクリップ (計算誤差対策)
     scores_df = scores_df.clip(0.0, 1.0)
 
     return scores_df, text_embeddings

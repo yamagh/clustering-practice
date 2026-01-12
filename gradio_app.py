@@ -5,7 +5,7 @@ import os
 from src.pipeline import run_clustering_pipeline
 from src.visualization import visualize_clusters_interactive
 
-def process_clustering(csv_file, tags_input, tags_file, model_name):
+def process_clustering(csv_file, tags_input, tags_file, model_name, normalize):
     # 1. CSV の読み込み
     if csv_file is None:
         raise gr.Error("CSVファイルは必須です。")
@@ -40,7 +40,13 @@ def process_clustering(csv_file, tags_input, tags_file, model_name):
         # プロット用の一時パスを作成
         output_plot_path = "gradio_output_plot.png"
         
-        result_df, plot_path, embeddings = run_clustering_pipeline(df, tags, output_plot_path=output_plot_path, model_name=model_name)
+        result_df, plot_path, embeddings = run_clustering_pipeline(
+            df, 
+            tags, 
+            output_plot_path=output_plot_path, 
+            model_name=model_name,
+            normalize_scores=normalize
+        )
         
         # 結果 CSV をダウンロード用に保存
         output_csv_path = "gradio_output.csv"
@@ -85,6 +91,12 @@ def create_demo():
                     allow_custom_value=True,
                     info="Hugging Face のモデルIDを指定します。初回選択時はダウンロードが発生します。"
                 )
+                
+                normalize_chk = gr.Checkbox(
+                    label="類似度スコアを正規化する (推奨)", 
+                    value=True,
+                    info="オンにすると、各文章に対してスコアを0.0-1.0にスケーリングし、相対的な関連度を明確にします。"
+                )
 
                 submit_btn = gr.Button("分析を実行", variant="primary")
             
@@ -99,7 +111,7 @@ def create_demo():
 
         submit_btn.click(
             fn=process_clustering,
-            inputs=[csv_input, tags_text, tags_file, model_selector],
+            inputs=[csv_input, tags_text, tags_file, model_selector, normalize_chk],
             outputs=[result_table, download_btn, plot_output]
         )
         
