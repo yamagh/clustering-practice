@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 from sklearn.cluster import KMeans
+from sklearn.metrics import silhouette_score
 
 def assign_primary_cluster(scores_df: pd.DataFrame) -> pd.Series:
     """
@@ -35,19 +36,54 @@ def generate_secondary_clusters(
         # 現在の第1クラスターのインデックスをフィルタリング
         mask = df[primary_cluster_col] == p_cluster
         indices = df.index[mask]
+        n_samples = len(indices)
         
-        if len(indices) < n_clusters:
-            # クラスター数よりアイテム数が少ない場合、単純に 0...n を割り当てる
-            cluster_labels = np.arange(len(indices))
+        if n_samples < 3:
+            # サンプル数が少なすぎる場合はクラスター化しない（全て0にするか、個別に割り当てる）
+            # ここでは単純に 0 を割り当てます
+            cluster_labels = np.zeros(n_samples, dtype=int)
         else:
-            # 対応する埋め込みを取得
-            # 埋め込みが df のインデックス (0..N) と一致していると仮定
-            # df のインデックスがリセットされていない場合、注意が必要。
-            # 理想的には埋め込みは df の順序と一致する numpy 配列であるべき。
             current_embeddings = embeddings[mask]
             
-            kmeans = KMeans(n_clusters=n_clusters, random_state=42, n_init=10)
-            cluster_labels = kmeans.fit_predict(current_embeddings)
+            # 最適なクラスター数を探索 (シルエット分析)
+            # 探索範囲: 2 から min(5, サンプル数 - 1)
+            # silhouette_score は n_labels < n_samples である必要があるため、max_k は n_samples - 1
+            max_k = min(5, n_samples - 1)
+            best_k = 2
+            best_score = -1
+            best_labels = None
+            
+            # デフォルト (k=2) の計算
+            # n_samples が 2 の場合、k=2 は n_labels == n_samples となり silhouette_score は計算不可だが、
+            # ここではループに入らないため計算されない。
+            # ただし、k=2 の結果自体は有効な場合がある（単にスコア計算ができないだけ）。
+            if n_samples >= 2:
+                 kmeans = KMeans(n_clusters=2, random_state=42, n_init=10)
+                 best_labels = kmeans.fit_predict(current_embeddings)
+            else:
+                 # n_samples=1 の場合など (前の条件で除外されているはずだが念のため)
+                 best_labels = np.zeros(n_samples, dtype=int)
+            
+            if max_k > 2:
+                for k in range(2, max_k + 1):
+                    kmeans = KMeans(n_clusters=k, random_state=42, n_init=10)
+                    labels = kmeans.fit_predict(current_embeddings)
+                    
+                    # シルエットスコアの計算
+                    # 注: 本来は距離行列を事前に計算したほうが高速ですが、データ量が少ないため都度計算でも可
+                    try:
+                        score = silhouette_score(current_embeddings, labels)
+                        if score > best_score:
+                            best_score = score
+                            best_k = k
+                            best_labels = labels
+                    except ValueError:
+                        # n_labels < 2 or n_labels >= n_samples の場合など
+                        continue
+            
+            cluster_labels = best_labels
+            
+            cluster_labels = best_labels
             
         secondary_clusters.loc[indices] = cluster_labels
         

@@ -1,8 +1,11 @@
 pandas
-scikit-learn
-sentence-transformers
 numpy
-jupyter
+scikit-learn
 matplotlib
+sentence-transformers
+gradio
+plotly
+japanize-matplotlib
+umap-learn
 japanize-matplotlib
 plotly

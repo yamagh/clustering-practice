@@ -9,7 +9,7 @@ import plotly.express as px
 
 def visualize_clusters(df: pd.DataFrame, text_embeddings: np.ndarray, tags: list[dict], output_path: str = 'data/cluster_visualization.png'):
     """
-    PCA 2D 射影を使用してクラスタリング結果とタグを可視化します。
+    UMAP 2D 射影を使用してクラスタリング結果とタグを可視化します。
     
     Args:
         df: '第2クラスター番号' などのデータを含む DataFrame。
@@ -42,17 +42,15 @@ def visualize_clusters(df: pd.DataFrame, text_embeddings: np.ndarray, tags: list
         
     tag_vectors = np.array(tag_vectors)
     
-    # 2. PCA 次元削減
+    # 2. UMAP 次元削減
     # 共通空間に合わせるためにテキスト埋め込みとタグ埋め込みを結合
-    # (オプション: テキストのみで適合させてタグがどこに来るか見る、または両方で適合させる。
-    # 両方で適合させると、両方がうまく表現されます。)
-    # テキストの方が数が多いので、主にテキストで適合させ、タグを射影します。
+    import umap
+    reducer = umap.UMAP(n_components=2, random_state=42, n_neighbors=15, min_dist=0.1)
     
-    pca = PCA(n_components=2)
     # テキストで適合
-    text_coords = pca.fit_transform(text_embeddings)
+    text_coords = reducer.fit_transform(text_embeddings)
     # タグを変換
-    tag_coords = pca.transform(tag_vectors)
+    tag_coords = reducer.transform(tag_vectors)
     
     # 3. プロット
     plt.figure(figsize=(12, 10))
@@ -99,9 +97,9 @@ def visualize_clusters(df: pd.DataFrame, text_embeddings: np.ndarray, tags: list
             va='bottom'
         )
         
-    plt.title('クラスタリング可視化 (2D PCA)')
-    plt.xlabel('PC1')
-    plt.ylabel('PC2')
+    plt.title('クラスタリング可視化 (2D UMAP)')
+    plt.xlabel('UMAP1')
+    plt.ylabel('UMAP2')
     plt.legend()
     plt.grid(True, linestyle='--', alpha=0.3)
     
@@ -136,10 +134,12 @@ def visualize_clusters_interactive(df: pd.DataFrame, text_embeddings: np.ndarray
         
     tag_vectors = np.array(tag_vectors)
     
-    # 2. PCA
-    pca = PCA(n_components=2)
-    text_coords = pca.fit_transform(text_embeddings)
-    tag_coords = pca.transform(tag_vectors)
+    # 2. UMAP
+    import umap
+    reducer = umap.UMAP(n_components=2, random_state=42, n_neighbors=15, min_dist=0.1)
+    
+    text_coords = reducer.fit_transform(text_embeddings)
+    tag_coords = reducer.transform(tag_vectors)
     
     # 3. Plotly Figure の作成
     fig = go.Figure()
@@ -199,9 +199,9 @@ def visualize_clusters_interactive(df: pd.DataFrame, text_embeddings: np.ndarray
     ))
     
     fig.update_layout(
-        title="クラスタリング可視化 (インタラクティブ)",
-        xaxis_title="PC1",
-        yaxis_title="PC2",
+        title="クラスタリング可視化 (インタラクティブ UMAP)",
+        xaxis_title="UMAP1",
+        yaxis_title="UMAP2",
         legend_title="凡例",
         template="plotly_white",
         autosize=True

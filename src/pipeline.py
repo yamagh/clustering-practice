@@ -54,7 +54,7 @@ def run_clustering_pipeline(input_df: pd.DataFrame, tags: list[dict], output_plo
         df_combined, 
         embeddings, 
         primary_cluster_col='第1クラスター番号',
-        n_clusters=2 
+        n_clusters=2
     )
     df_combined['第2クラスター番号'] = secondary_clusters
 
