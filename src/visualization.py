@@ -59,22 +59,42 @@ def visualize_clusters(df: pd.DataFrame, text_embeddings: np.ndarray, tags: list
     # 3. プロット
     plt.figure(figsize=(12, 10))
     
-    # 色付けに '第2クラスター番号' を使用
-    # NaN または -1 がある場合の処理
-    clusters = df['第2クラスター番号'].fillna(-1)
-    unique_clusters = sorted(clusters.unique())
+    # 色付けとラベル生成
+    # 第1クラスター番号がある場合は、それと組み合わせてラベルを作成
+    if '第1クラスター番号' in df.columns:
+        # 欠損値処理
+        p_clusters = df['第1クラスター番号'].fillna('Unknown')
+        s_clusters = df['第2クラスター番号'].fillna(-1)
+        
+        # 組み合わせラベルを作成 (例: "経済 - 1")
+        # 第2クラスターが -1 (ノイズ) の場合の扱いも考慮できますが、
+        # ここでは単純に文字列結合します
+        combined_labels = p_clusters.astype(str) + " - " + s_clusters.astype(str)
+        unique_labels = sorted(combined_labels.unique())
+        
+        clusters = combined_labels
+        unique_clusters = unique_labels
+    else:
+        # 従来通り
+        clusters = df['第2クラスター番号'].fillna(-1)
+        unique_clusters = sorted(clusters.unique())
     
-    # カラーマップの生成
-    colors = plt.cm.get_cmap('tab10', len(unique_clusters))
-    
-    for i, cluster_id in enumerate(unique_clusters):
-        mask = clusters == cluster_id
+    # カラーマップの生成 (タブローカラーなどを使用)
+    # クラスター数が多い場合は tab20 などに変更することも検討
+    if len(unique_clusters) <= 10:
+        cmap = plt.cm.get_cmap('tab10', len(unique_clusters))
+    else:
+        cmap = plt.cm.get_cmap('tab20', len(unique_clusters))
+        
+    for i, cluster_label in enumerate(unique_clusters):
+        mask = clusters == cluster_label
         plt.scatter(
             text_coords[mask, 0], 
             text_coords[mask, 1], 
-            label=f'クラスター {cluster_id}',
+            label=f'{cluster_label}',
             alpha=0.6,
-            s=30
+            s=30,
+            color=cmap(i)
         )
         
     # タグのプロット
@@ -153,19 +173,24 @@ def visualize_clusters_interactive(df: pd.DataFrame, text_embeddings: np.ndarray
     fig = go.Figure()
     
     # テキストの追加
-    # クラスターごとに離散的な色を使用できます
-    clusters = df['第2クラスター番号'].fillna(-1).astype(str)
+    # テキストの追加
+    # クラスターラベルの生成
+    if '第1クラスター番号' in df.columns:
+        p_clusters = df['第1クラスター番号'].fillna('Unknown').astype(str)
+        s_clusters = df['第2クラスター番号'].fillna(-1).astype(str)
+        combined_labels = p_clusters + " - " + s_clusters
+        clusters = combined_labels
+    else:
+        clusters = df['第2クラスター番号'].fillna(-1).astype(str)
     
-    # Plotly Express などで容易にするためにプロット用 DataFrame を作成するか、
-    # graph_objects でトレースを制御するためにループ処理するか。
-    unique_clusters = sorted(clusters.unique(), key=lambda x: int(float(x)) if x.replace('.','',1).isdigit() or x.lstrip('-').isdigit() else 999)
+    unique_clusters = sorted(clusters.unique())
     
     # 色の定義
     # Plotly のデフォルトシーケンスを使用
     colors = px.colors.qualitative.Plotly
     
-    for i, cluster_id in enumerate(unique_clusters):
-        mask = clusters == cluster_id
+    for i, cluster_label in enumerate(unique_clusters):
+        mask = clusters == cluster_label
         
         # ホバーテキストの準備
         # ホバーテキストにはテキストのスニペットを含めるべき
@@ -175,10 +200,11 @@ def visualize_clusters_interactive(df: pd.DataFrame, text_embeddings: np.ndarray
             x=text_coords[mask, 0],
             y=text_coords[mask, 1],
             mode='markers',
-            name=f'クラスター {cluster_id}',
+            name=f'{cluster_label}',
             marker=dict(
                 size=8,
-                opacity=0.7
+                opacity=0.7,
+                color=colors[i % len(colors)] # 色を割り当て
             ),
             text=hover_texts,
             hoverinfo='text+name'
