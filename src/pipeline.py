@@ -10,7 +10,7 @@ from src.preprocessing import normalize_text
 
 import numpy as np
 
-def run_clustering_pipeline(input_df: pd.DataFrame, tags: list[dict], output_plot_path: str = 'data/cluster_visualization.png') -> tuple[pd.DataFrame, str, np.ndarray]:
+def run_clustering_pipeline(input_df: pd.DataFrame, tags: list[dict], output_plot_path: str = 'data/cluster_visualization.png', model_name: str = 'cl-nagoya/ruri-v3-70m') -> tuple[pd.DataFrame, str, np.ndarray]:
     """
     クラスタリングパイプライン全体を実行します:
     1. タグスコアの計算
@@ -23,6 +23,7 @@ def run_clustering_pipeline(input_df: pd.DataFrame, tags: list[dict], output_plo
         input_df: 分析対象のテキストを含む入力 DataFrame。
         tags: タグ定義の辞書リスト。
         output_plot_path: 可視化画像の保存先パス。
+        model_name: 使用するテキスト埋め込みモデルの名前。
         
     Returns:
         以下のタプル:
@@ -31,7 +32,7 @@ def run_clustering_pipeline(input_df: pd.DataFrame, tags: list[dict], output_plo
         - テキストの埋め込みベクトル (embeddings)。
     """
     
-    print("ステップ 1: タグ関連性スコアを計算中...")
+    print(f"ステップ 1: タグ関連性スコアを計算中... (モデル: {model_name})")
     # スコアの計算と埋め込みベクトルの取得
     # '文章' がテキストカラムであると仮定
     if '文章' not in input_df.columns:
@@ -41,7 +42,7 @@ def run_clustering_pipeline(input_df: pd.DataFrame, tags: list[dict], output_plo
     raw_texts = input_df['文章'].fillna('').tolist()
     texts = [normalize_text(t) for t in raw_texts]
     
-    scores_df, embeddings = calculate_tag_scores(texts, tags)
+    scores_df, embeddings = calculate_tag_scores(texts, tags, model_name=model_name)
     
     # スコアをメインの DF にマージ
     # input_df のインデックスが標準でない場合に備えてリセット

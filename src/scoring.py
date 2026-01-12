@@ -7,13 +7,16 @@ import numpy as np
 from functools import lru_cache
 
 @lru_cache(maxsize=1)
-@lru_cache(maxsize=1)
-# def get_model(model_name: str = 'cl-nagoya/ruri-v3-30m'):
+@lru_cache(maxsize=5)
 def get_model(model_name: str = 'cl-nagoya/ruri-v3-70m'):
-# def get_model(model_name: str = 'cl-nagoya/ruri-v3-310m'):
+    """
+    指定された名前の SentenceTransformer モデルをロードして返します。
+    LRUキャッシュを使用して、最近使用されたモデルをメモリに保持します。
+    """
+    print(f"Loading model: {model_name}")
     return SentenceTransformer(model_name)
 
-def calculate_tag_scores(texts: list[str], tags: list[dict], model=None) -> tuple[pd.DataFrame, np.ndarray]:
+def calculate_tag_scores(texts: list[str], tags: list[dict], model=None, model_name: str = 'cl-nagoya/ruri-v3-70m') -> tuple[pd.DataFrame, np.ndarray]:
     """
     タグごとに複数のキーワードを使用して、テキストとタグの間の意味的類似度スコアを計算します。
     タグのスコアは、定義されたすべてのテキストの中で最大の類似度スコアとなります。
@@ -22,7 +25,8 @@ def calculate_tag_scores(texts: list[str], tags: list[dict], model=None) -> tupl
         texts: 入力テキストのリスト。
         tags: タグ定義のリスト。各辞書には 'name' と 'texts' が必要です。
               例: [{'name': 'Economy', 'texts': ['Money', 'Finance']}, ...]
-        model: 事前ロードされた SentenceTransformer モデル。
+        model: 事前ロードされた SentenceTransformer モデル。Noneの場合は内部でロードします。
+        model_name: ロードするモデルの名前。modelがNoneの場合に使用されます。
 
     Returns:
         以下のタプル:
@@ -30,7 +34,7 @@ def calculate_tag_scores(texts: list[str], tags: list[dict], model=None) -> tupl
         - テキスト埋め込みの Numpy 配列。
     """
     if model is None:
-        model = get_model()
+        model = get_model(model_name=model_name)
 
     # 入力テキストのエンコード
     text_embeddings = model.encode(texts)

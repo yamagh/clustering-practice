@@ -5,7 +5,7 @@ import os
 from src.pipeline import run_clustering_pipeline
 from src.visualization import visualize_clusters_interactive
 
-def process_clustering(csv_file, tags_input, tags_file):
+def process_clustering(csv_file, tags_input, tags_file, model_name):
     # 1. CSV の読み込み
     if csv_file is None:
         raise gr.Error("CSVファイルは必須です。")
@@ -40,7 +40,7 @@ def process_clustering(csv_file, tags_input, tags_file):
         # プロット用の一時パスを作成
         output_plot_path = "gradio_output_plot.png"
         
-        result_df, plot_path, embeddings = run_clustering_pipeline(df, tags, output_plot_path=output_plot_path)
+        result_df, plot_path, embeddings = run_clustering_pipeline(df, tags, output_plot_path=output_plot_path, model_name=model_name)
         
         # 結果 CSV をダウンロード用に保存
         output_csv_path = "gradio_output.csv"
@@ -71,6 +71,21 @@ def create_demo():
                 tags_file = gr.File(label="タグ JSON のアップロード", file_types=[".json"])
                 tags_text = gr.Code(label="またはタグ JSON を貼り付け", language="json", lines=5)
                 
+                gr.Markdown("### モデル設定")
+                model_selector = gr.Dropdown(
+                    choices=[
+                        "cl-nagoya/ruri-v3-30m",
+                        "cl-nagoya/ruri-v3-70m",
+                        "cl-nagoya/ruri-v3-130m",
+                        "cl-nagoya/ruri-v3-310m",
+                        "sbintuitions/sarashina-embedding-v2-1b"
+                    ],
+                    value="cl-nagoya/ruri-v3-70m",
+                    label="テキスト埋め込みモデルの選択",
+                    allow_custom_value=True,
+                    info="Hugging Face のモデルIDを指定します。初回選択時はダウンロードが発生します。"
+                )
+
                 submit_btn = gr.Button("分析を実行", variant="primary")
             
             with gr.Column():
@@ -84,7 +99,7 @@ def create_demo():
 
         submit_btn.click(
             fn=process_clustering,
-            inputs=[csv_input, tags_text, tags_file],
+            inputs=[csv_input, tags_text, tags_file, model_selector],
             outputs=[result_table, download_btn, plot_output]
         )
         
