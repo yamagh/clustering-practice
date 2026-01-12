@@ -29,7 +29,7 @@ def main():
 
     # Use the pipeline
     from src.pipeline import run_clustering_pipeline
-    df_final, _ = run_clustering_pipeline(df, tags, output_plot_path=vis_output_path)
+    df_final, _, _ = run_clustering_pipeline(df, tags, output_plot_path=vis_output_path)
 
     print(f"Saving output to {output_path}...")
     df_final.to_csv(output_path, index=False, encoding='utf-8-sig') # utf-8-sig for Excel compatibility

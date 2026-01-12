@@ -4,6 +4,8 @@ import matplotlib.pyplot as plt
 import japanize_matplotlib
 from sklearn.decomposition import PCA
 from src.scoring import get_model # Reuse the model loader if needed, or just pass embeddings
+import plotly.graph_objects as go
+import plotly.express as px
 
 def visualize_clusters(df: pd.DataFrame, text_embeddings: np.ndarray, tags: list[dict], output_path: str = 'data/cluster_visualization.png'):
     """
@@ -107,3 +109,102 @@ def visualize_clusters(df: pd.DataFrame, text_embeddings: np.ndarray, tags: list
     plt.savefig(output_path, dpi=300, bbox_inches='tight')
     plt.close()
     print(f"Visualization saved to {output_path}")
+
+def visualize_clusters_interactive(df: pd.DataFrame, text_embeddings: np.ndarray, tags: list[dict]) -> go.Figure:
+    """
+    Generate an interactive 2D scatter plot of clusters and tags using Plotly.
+
+    Args:
+        df: DataFrame containing '第2クラスター番号', '文章', etc.
+        text_embeddings: Numpy array of sentence embeddings for the texts.
+        tags: List of tag definitions.
+
+    Returns:
+        go.Figure: Plotly figure object.
+    """
+    # 1. Calculate Tag Embeddings (Same logic as static)
+    model = get_model()
+    tag_names = []
+    tag_vectors = []
+    
+    for tag in tags:
+        keywords = tag['texts']
+        kw_embeddings = model.encode(keywords) 
+        tag_mean_embedding = np.mean(kw_embeddings, axis=0)
+        tag_names.append(tag['name'])
+        tag_vectors.append(tag_mean_embedding)
+        
+    tag_vectors = np.array(tag_vectors)
+    
+    # 2. PCA
+    pca = PCA(n_components=2)
+    text_coords = pca.fit_transform(text_embeddings)
+    tag_coords = pca.transform(tag_vectors)
+    
+    # 3. Create Plotly Figure
+    fig = go.Figure()
+    
+    # Add Texts
+    # We can use discrete colors for clusters
+    clusters = df['第2クラスター番号'].fillna(-1).astype(str)
+    
+    # Create a DataFrame for plotting to make it easier with express or just loop
+    # Looping gives more control over traces in graph_objects
+    unique_clusters = sorted(clusters.unique(), key=lambda x: int(float(x)) if x.replace('.','',1).isdigit() or x.lstrip('-').isdigit() else 999)
+    
+    # Define colors
+    # Plotly has default sequences, let's use them
+    colors = px.colors.qualitative.Plotly
+    
+    for i, cluster_id in enumerate(unique_clusters):
+        mask = clusters == cluster_id
+        
+        # Prepare hover text
+        # Hover text should include the text snippet
+        hover_texts = df.loc[mask, '文章'].apply(lambda x: x[:100] + "..." if len(str(x)) > 100 else str(x)).tolist()
+        
+        fig.add_trace(go.Scatter(
+            x=text_coords[mask, 0],
+            y=text_coords[mask, 1],
+            mode='markers',
+            name=f'Cluster {cluster_id}',
+            marker=dict(
+                size=8,
+                opacity=0.7
+            ),
+            text=hover_texts,
+            hoverinfo='text+name'
+        ))
+        
+    # Add Tags
+    fig.add_trace(go.Scatter(
+        x=tag_coords[:, 0],
+        y=tag_coords[:, 1],
+        mode='markers+text',
+        name='Tags',
+        marker=dict(
+            symbol='x',
+            size=12,
+            color='red',
+            line=dict(width=2, color='DarkRed')
+        ),
+        text=tag_names,
+        textposition="top center",
+        textfont=dict(
+            family="sans serif",
+            size=14,
+            color="DarkRed"
+        ),
+        hoverinfo='name+text'
+    ))
+    
+    fig.update_layout(
+        title="Clustering Visualization (Interactive)",
+        xaxis_title="PC1",
+        yaxis_title="PC2",
+        legend_title="Legend",
+        template="plotly_white",
+        autosize=True
+    )
+    
+    return fig

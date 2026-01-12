@@ -6,7 +6,9 @@ from src.clustering import assign_primary_cluster, generate_secondary_clusters
 from src.analysis import calculate_representativeness
 from src.visualization import visualize_clusters
 
-def run_clustering_pipeline(input_df: pd.DataFrame, tags: list[dict], output_plot_path: str = 'data/cluster_visualization.png') -> tuple[pd.DataFrame, str]:
+import numpy as np
+
+def run_clustering_pipeline(input_df: pd.DataFrame, tags: list[dict], output_plot_path: str = 'data/cluster_visualization.png') -> tuple[pd.DataFrame, str, np.ndarray]:
     """
     Runs the full clustering pipeline:
     1. Calculate Tag Scores
@@ -82,4 +84,4 @@ def run_clustering_pipeline(input_df: pd.DataFrame, tags: list[dict], output_plo
     print("Step 5: Visualizing Clusters...")
     visualize_clusters(df_final, embeddings, tags, output_path=output_plot_path)
     
-    return df_final, output_plot_path
+    return df_final, output_plot_path, embeddings

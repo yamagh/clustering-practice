@@ -3,6 +3,7 @@ import pandas as pd
 import json
 import os
 from src.pipeline import run_clustering_pipeline
+from src.visualization import visualize_clusters_interactive
 
 def process_clustering(csv_file, tags_input, tags_file):
     # 1. Load CSV
@@ -39,13 +40,16 @@ def process_clustering(csv_file, tags_input, tags_file):
         # Create a temporary path for the plot
         output_plot_path = "gradio_output_plot.png"
         
-        result_df, plot_path = run_clustering_pipeline(df, tags, output_plot_path=output_plot_path)
+        result_df, plot_path, embeddings = run_clustering_pipeline(df, tags, output_plot_path=output_plot_path)
         
         # Save Result CSV for download
         output_csv_path = "gradio_output.csv"
         result_df.to_csv(output_csv_path, index=False, encoding='utf-8-sig')
         
-        return result_df, output_csv_path, plot_path
+        # Generate Interactive Plot
+        fig = visualize_clusters_interactive(result_df, embeddings, tags)
+        
+        return result_df, output_csv_path, fig
         
     except Exception as e:
         import traceback
@@ -70,7 +74,7 @@ def create_demo():
                 submit_btn = gr.Button("Run Analysis", variant="primary")
             
             with gr.Column():
-                plot_output = gr.Image(label="Cluster Visualization")
+                plot_output = gr.Plot(label="Cluster Visualization")
                 
         with gr.Row():
             result_table = gr.Dataframe(label="Results", interactive=False)
