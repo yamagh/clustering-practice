@@ -9,3 +9,5 @@ japanize-matplotlib
 umap-learn
 japanize-matplotlib
 plotly
+protobuf
+sentencepiece

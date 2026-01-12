@@ -45,7 +45,11 @@ def visualize_clusters(df: pd.DataFrame, text_embeddings: np.ndarray, tags: list
     # 2. UMAP 次元削減
     # 共通空間に合わせるためにテキスト埋め込みとタグ埋め込みを結合
     import umap
-    reducer = umap.UMAP(n_components=2, random_state=42, n_neighbors=15, min_dist=0.1)
+    n_samples = len(text_embeddings)
+    n_neighbors = min(15, n_samples - 1) if n_samples > 1 else 1
+    if n_neighbors < 2: n_neighbors = 2
+    
+    reducer = umap.UMAP(n_components=2, random_state=42, n_neighbors=n_neighbors, min_dist=0.1)
     
     # テキストで適合
     text_coords = reducer.fit_transform(text_embeddings)
@@ -136,7 +140,11 @@ def visualize_clusters_interactive(df: pd.DataFrame, text_embeddings: np.ndarray
     
     # 2. UMAP
     import umap
-    reducer = umap.UMAP(n_components=2, random_state=42, n_neighbors=15, min_dist=0.1)
+    n_samples = len(text_embeddings)
+    n_neighbors = min(15, n_samples - 1) if n_samples > 1 else 1
+    if n_neighbors < 2: n_neighbors = 2
+    
+    reducer = umap.UMAP(n_components=2, random_state=42, n_neighbors=n_neighbors, min_dist=0.1)
     
     text_coords = reducer.fit_transform(text_embeddings)
     tag_coords = reducer.transform(tag_vectors)

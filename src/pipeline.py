@@ -4,7 +4,9 @@ import os
 from src.scoring import calculate_tag_scores
 from src.clustering import assign_primary_cluster, generate_secondary_clusters
 from src.analysis import calculate_representativeness
+from src.analysis import calculate_representativeness
 from src.visualization import visualize_clusters
+from src.preprocessing import normalize_text
 
 import numpy as np
 
@@ -35,7 +37,10 @@ def run_clustering_pipeline(input_df: pd.DataFrame, tags: list[dict], output_plo
     if '文章' not in input_df.columns:
         raise ValueError("入力 DataFrame には '文章' カラムが必要です。")
         
-    texts = input_df['文章'].fillna('').tolist()
+    # 前処理の適用
+    raw_texts = input_df['文章'].fillna('').tolist()
+    texts = [normalize_text(t) for t in raw_texts]
+    
     scores_df, embeddings = calculate_tag_scores(texts, tags)
     
     # スコアをメインの DF にマージ
