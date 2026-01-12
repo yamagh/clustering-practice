@@ -13,27 +13,27 @@ def load_tags(path: str = 'tags.json') -> list[dict]:
     return data['tags']
 
 def main():
-    # Paths
+    # パス設定
     input_path = 'data/input.csv'
     output_path = 'data/output.csv'
     tags_path = 'tags.json'
     vis_output_path = 'data/cluster_visualization.png'
 
-    print("Loading data...")
+    print("データを読み込んでいます...")
     if not os.path.exists(input_path):
-        print(f"Error: {input_path} not found.")
+        print(f"エラー: {input_path} が見つかりません。")
         return
         
     df = pd.read_csv(input_path)
     tags = load_tags(tags_path)
 
-    # Use the pipeline
+    # パイプラインの実行
     from src.pipeline import run_clustering_pipeline
     df_final, _, _ = run_clustering_pipeline(df, tags, output_plot_path=vis_output_path)
 
-    print(f"Saving output to {output_path}...")
-    df_final.to_csv(output_path, index=False, encoding='utf-8-sig') # utf-8-sig for Excel compatibility
-    print("Done!")
+    print(f"結果を {output_path} に保存しています...")
+    df_final.to_csv(output_path, index=False, encoding='utf-8-sig') # Excel互換性のための utf-8-sig
+    print("完了！")
 
 if __name__ == "__main__":
     main()

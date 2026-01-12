@@ -6,47 +6,47 @@ from src.pipeline import run_clustering_pipeline
 from src.visualization import visualize_clusters_interactive
 
 def process_clustering(csv_file, tags_input, tags_file):
-    # 1. Load CSV
+    # 1. CSV の読み込み
     if csv_file is None:
-        raise gr.Error("CSV File is required.")
+        raise gr.Error("CSVファイルは必須です。")
     
     try:
         df = pd.read_csv(csv_file.name)
     except Exception as e:
-        raise gr.Error(f"Failed to read CSV: {str(e)}")
+        raise gr.Error(f"CSVの読み込みに失敗しました: {str(e)}")
 
-    # 2. Load Tags
+    # 2. タグの読み込み
     tags = []
-    # Priority: File > Text
+    # 優先順位: ファイル > テキスト
     if tags_file is not None:
         try:
             with open(tags_file.name, 'r', encoding='utf-8') as f:
                 data = json.load(f)
                 tags = data.get('tags', [])
         except Exception as e:
-            raise gr.Error(f"Failed to read Tags JSON file: {str(e)}")
+            raise gr.Error(f"タグJSONファイルの読み込みに失敗しました: {str(e)}")
     elif tags_input and tags_input.strip():
         try:
             data = json.loads(tags_input)
             tags = data.get('tags', [])
         except Exception as e:
-            raise gr.Error(f"Failed to parse Tags JSON text: {str(e)}")
+            raise gr.Error(f"タグJSONテキストの解析に失敗しました: {str(e)}")
     
     if not tags:
-        raise gr.Error("Tags are required (either JSON text or file).")
+        raise gr.Error("タグが必要です (JSONテキストまたはファイル)。")
 
-    # 3. Run Pipeline
+    # 3. パイプラインの実行
     try:
-        # Create a temporary path for the plot
+        # プロット用の一時パスを作成
         output_plot_path = "gradio_output_plot.png"
         
         result_df, plot_path, embeddings = run_clustering_pipeline(df, tags, output_plot_path=output_plot_path)
         
-        # Save Result CSV for download
+        # 結果 CSV をダウンロード用に保存
         output_csv_path = "gradio_output.csv"
         result_df.to_csv(output_csv_path, index=False, encoding='utf-8-sig')
         
-        # Generate Interactive Plot
+        # インタラクティブプロットの生成
         fig = visualize_clusters_interactive(result_df, embeddings, tags)
         
         return result_df, output_csv_path, fig
@@ -54,33 +54,33 @@ def process_clustering(csv_file, tags_input, tags_file):
     except Exception as e:
         import traceback
         traceback.print_exc()
-        raise gr.Error(f"Error during clustering: {str(e)}")
+        raise gr.Error(f"クラスタリング中にエラーが発生しました: {str(e)}")
 
 
 def create_demo():
-    with gr.Blocks(title="Clustering Practice UI") as demo:
-        gr.Markdown("# Clustering Practice App")
-        gr.Markdown("Upload your data and tags to run the clustering analysis.")
+    with gr.Blocks(title="クラスタリング練習 UI") as demo:
+        gr.Markdown("# クラスタリング練習アプリ")
+        gr.Markdown("データとタグをアップロードしてクラスタリング分析を実行します。")
         
         with gr.Row():
             with gr.Column():
-                csv_input = gr.File(label="Upload Input CSV", file_types=[".csv"])
+                csv_input = gr.File(label="入力 CSV のアップロード", file_types=[".csv"])
                 
-                gr.Markdown("### Tags Configuration")
-                gr.Markdown("Upload a JSON file OR paste JSON content.")
-                tags_file = gr.File(label="Upload Tags JSON", file_types=[".json"])
-                tags_text = gr.Code(label="Or Paste Tags JSON", language="json", lines=5)
+                gr.Markdown("### タグ設定")
+                gr.Markdown("JSON ファイルをアップロードするか、JSON コンテンツを貼り付けてください。")
+                tags_file = gr.File(label="タグ JSON のアップロード", file_types=[".json"])
+                tags_text = gr.Code(label="またはタグ JSON を貼り付け", language="json", lines=5)
                 
-                submit_btn = gr.Button("Run Analysis", variant="primary")
+                submit_btn = gr.Button("分析を実行", variant="primary")
             
             with gr.Column():
-                plot_output = gr.Plot(label="Cluster Visualization")
+                plot_output = gr.Plot(label="クラスター可視化")
                 
         with gr.Row():
-            result_table = gr.Dataframe(label="Results", interactive=False)
+            result_table = gr.Dataframe(label="結果", interactive=False)
             
         with gr.Row():
-            download_btn = gr.File(label="Download Output CSV")
+            download_btn = gr.File(label="結果 CSV のダウンロード")
 
         submit_btn.click(
             fn=process_clustering,

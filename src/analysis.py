@@ -9,23 +9,23 @@ def calculate_representativeness(
     secondary_cluster_col: str
 ) -> pd.DataFrame:
     """
-    Calculate position score (closeness to centroid) for each item.
+    各アイテムの位置スコア (重心への近さ) を計算します。
     
     Args:
-        df: DataFrame with cluster assignments.
-        embeddings: Text embeddings.
-        primary_cluster_col: Column name for primary cluster.
-        secondary_cluster_col: Column name for secondary cluster.
+        df: クラスター割り当てを持つ DataFrame。
+        embeddings: テキスト埋め込み。
+        primary_cluster_col: 第1クラスターのカラム名。
+        secondary_cluster_col: 第2クラスターのカラム名。
         
     Returns:
-        DataFrame with an added 'position_score' column.
+        'position_score' カラムが追加された DataFrame。
     """
     df = df.copy()
     df['position_score'] = 0.0
     
-    # Group by (Primary, Secondary)
-    # We create a combined key or iterate unique pairs.
-    # Iterating unique pairs is safer.
+    # (第1クラスター, 第2クラスター) でグループ化
+    # 結合キーを作成するか、一意のペアを反復処理します。
+    # 一意のペアを反復処理する方が安全です。
     
     unique_pairs = df[[primary_cluster_col, secondary_cluster_col]].drop_duplicates().values
     
@@ -38,15 +38,15 @@ def calculate_representativeness(
             
         current_embeddings = embeddings[mask]
         
-        # Calculate centroid
+        # 重心の計算
         centroid = np.mean(current_embeddings, axis=0).reshape(1, -1)
         
-        # Calculate distances to centroid
+        # 重心への距離を計算
         distances = euclidean_distances(current_embeddings, centroid).flatten()
         
-        # Convert distance to score (0.0 - 1.0)
-        # Closer is better.
-        # Strategy: 1 / (1 + distance)
+        # 距離をスコアに変換 (0.0 - 1.0)
+        # 近いほど良い。
+        # 戦略: 1 / (1 + distance)
         scores = 1.0 / (1.0 + distances)
         
         df.loc[indices, 'position_score'] = scores

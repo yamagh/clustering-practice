@@ -10,45 +10,46 @@ import numpy as np
 
 def run_clustering_pipeline(input_df: pd.DataFrame, tags: list[dict], output_plot_path: str = 'data/cluster_visualization.png') -> tuple[pd.DataFrame, str, np.ndarray]:
     """
-    Runs the full clustering pipeline:
-    1. Calculate Tag Scores
-    2. Assign Primary Cluster
-    3. Generate Secondary Clusters
-    4. Calculate Position Scores
-    5. Visualize
+    クラスタリングパイプライン全体を実行します:
+    1. タグスコアの計算
+    2. 第1クラスターの割り当て (Primary Cluster)
+    3. 第2クラスターの生成 (Secondary Clusters)
+    4. 位置スコア (Position Scores) の計算
+    5. 可視化
     
     Args:
-        input_df: Input DataFrame containing the text to analyze.
-        tags: List of tag dictionaries.
-        output_plot_path: Path to save the visualization image.
+        input_df: 分析対象のテキストを含む入力 DataFrame。
+        tags: タグ定義の辞書リスト。
+        output_plot_path: 可視化画像の保存先パス。
         
     Returns:
-        A tuple containing:
-        - The processed DataFrame with scores and cluster assignments.
-        - The path to the saved visualization image.
+        以下のタプル:
+        - スコアとクラスター割り当てを含む処理済み DataFrame。
+        - 保存された可視化画像のパス。
+        - テキストの埋め込みベクトル (embeddings)。
     """
     
-    print("Step 1: Calculating Tag Relevance Scores...")
-    # Calculate scores and get embeddings
-    # Assuming '文章' is the text column.
+    print("ステップ 1: タグ関連性スコアを計算中...")
+    # スコアの計算と埋め込みベクトルの取得
+    # '文章' がテキストカラムであると仮定
     if '文章' not in input_df.columns:
-        raise ValueError("Input DataFrame must contain a '文章' column.")
+        raise ValueError("入力 DataFrame には '文章' カラムが必要です。")
         
     texts = input_df['文章'].fillna('').tolist()
     scores_df, embeddings = calculate_tag_scores(texts, tags)
     
-    # Merge scores into main DF
-    # Reset index to ensure alignment if input_df has non-standard index
+    # スコアをメインの DF にマージ
+    # input_df のインデックスが標準でない場合に備えてリセット
     df_combined = pd.concat([input_df.reset_index(drop=True), scores_df.reset_index(drop=True)], axis=1)
 
-    print("Step 2: Assigning Primary Cluster...")
+    print("ステップ 2: 第1クラスターを割り当て中...")
     tag_names = [t['name'] for t in tags]
     primary_clusters = assign_primary_cluster(df_combined[tag_names])
     df_combined['第1クラスター番号'] = primary_clusters
 
-    print("Step 3: Generating Secondary Clusters...")
-    # Generating secondary clusters
-    # Note: n_clusters=2 is hardcoded in main.py, keeping it same here or we can make it an arg.
+    print("ステップ 3: 第2クラスターを生成中...")
+    # 第2クラスターの生成
+    # 注: n_clusters=2 は main.py でハードコードされているため、ここでも同じにしていますが、引数化も可能です。
     secondary_clusters = generate_secondary_clusters(
         df_combined, 
         embeddings, 
@@ -57,7 +58,7 @@ def run_clustering_pipeline(input_df: pd.DataFrame, tags: list[dict], output_plo
     )
     df_combined['第2クラスター番号'] = secondary_clusters
 
-    print("Step 4: Calculating Position Scores...")
+    print("ステップ 4: 位置スコアを計算中...")
     df_combined = calculate_representativeness(
         df_combined,
         embeddings,
@@ -65,23 +66,23 @@ def run_clustering_pipeline(input_df: pd.DataFrame, tags: list[dict], output_plo
         secondary_cluster_col='第2クラスター番号'
     )
     
-    # Rename columns to match requirements
+    # 要件に合わせてカラム名を変更
     df_combined = df_combined.rename(columns={'position_score': '位置スコア'})
     
-    # Reorder columns
-    # Keep original columns usually, but ensure the required ones are present
-    # Logic from main.py:
+    # カラムの並べ替え
+    # 通常は元のカラムを維持しますが、必須カラムが存在することを確認します
+    # main.py のロジック:
     cols = ['ID', '文章'] + tag_names + ['第1クラスター番号', '第2クラスター番号', '位置スコア']
     
-    # Validate if ID exists, otherwise just keep what we have or add it?
-    # main.py assumes ID exists.
+    # IDが存在するか確認し、なければあるものだけを使用
+    # main.py は ID が存在することを前提としています。
     available_cols = [c for c in cols if c in df_combined.columns]
-    # If there are other columns in input, we might want to keep them or strictly follow the output format.
-    # main.py does: df_final = df_combined[cols]
+    # 入力に他のカラムがある場合、それらを保持するか、出力フォーマットに厳密に従うか
+    # main.py では: df_final = df_combined[cols]
     
     df_final = df_combined[available_cols]
 
-    print("Step 5: Visualizing Clusters...")
+    print("ステップ 5: クラスターを可視化中...")
     visualize_clusters(df_final, embeddings, tags, output_path=output_plot_path)
     
     return df_final, output_plot_path, embeddings

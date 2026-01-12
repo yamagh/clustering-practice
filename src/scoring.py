@@ -12,63 +12,63 @@ def get_model(model_name: str = 'sentence-transformers/paraphrase-multilingual-M
 
 def calculate_tag_scores(texts: list[str], tags: list[dict], model=None) -> tuple[pd.DataFrame, np.ndarray]:
     """
-    Calculate semantic similarity scores between texts and tags using multiple keywords per tag.
-    The score for a tag is the maximum similarity score among all its defined texts.
+    タグごとに複数のキーワードを使用して、テキストとタグの間の意味的類似度スコアを計算します。
+    タグのスコアは、定義されたすべてのテキストの中で最大の類似度スコアとなります。
 
     Args:
-        texts: List of input texts.
-        tags: List of tag definitions. Each dict should have 'name' and 'texts'.
-              Example: [{'name': 'Economy', 'texts': ['Money', 'Finance']}, ...]
-        model: Pre-loaded SentenceTransformer model.
+        texts: 入力テキストのリスト。
+        tags: タグ定義のリスト。各辞書には 'name' と 'texts' が必要です。
+              例: [{'name': 'Economy', 'texts': ['Money', 'Finance']}, ...]
+        model: 事前ロードされた SentenceTransformer モデル。
 
     Returns:
-        Tuple containing:
-        - DataFrame containing similarity scores for each tag (0.0 - 1.0).
-        - Numpy array of text embeddings.
+        以下のタプル:
+        - 各タグの類似度スコアを含む DataFrame (0.0 - 1.0)。
+        - テキスト埋め込みの Numpy 配列。
     """
     if model is None:
         model = get_model()
 
-    # Encode input texts
+    # 入力テキストのエンコード
     text_embeddings = model.encode(texts)
 
-    # 1. Collect all tag texts and map them back to tag names
+    # 1. すべてのタグテキストを収集し、タグ名にマッピング
     all_tag_texts = []
-    text_to_tag_index = [] # Maps index of text in all_tag_texts to index of tag in tags list
+    text_to_tag_index = [] # all_tag_texts 内のテキストのインデックスを tags リストのタグのインデックスにマッピング
 
     for i, tag_def in enumerate(tags):
         tag_texts = tag_def['texts']
         all_tag_texts.extend(tag_texts)
         text_to_tag_index.extend([i] * len(tag_texts))
 
-    # 2. Encode all tag texts
+    # 2. すべてのタグテキストをエンコード
     tag_embeddings = model.encode(all_tag_texts)
 
-    # 3. Calculate cosine similarity (texts vs all tag keywords)
-    # Shape: (n_texts, total_n_tag_keywords)
+    # 3. コサイン類似度の計算 (テキスト vs 全タグキーワード)
+    # 形状: (n_texts, total_n_tag_keywords)
     raw_similarity_matrix = cosine_similarity(text_embeddings, tag_embeddings)
 
-    # 4. Aggregate scores for each tag (take max over the tag's keywords)
+    # 4. 各タグのスコアを集計 (タグのキーワードの最大値を取得)
     n_texts = len(texts)
     n_tags = len(tags)
     aggregated_scores = np.zeros((n_texts, n_tags))
 
-    # We can do this efficiently using pandas or looping. 
-    # Since n_tags is small, looping is fine and clear.
-    # Convert text_to_tag_index to numpy for masking if needed, but simple iteration is robust.
+    # pandas を使用するかループ処理で効率的に行えます。
+    # n_tags が小さいため、ループ処理で十分明確です。
+    # text_to_tag_index を numpy に変換してマスキングすることもできますが、単純な反復処理が堅牢です。
     
-    # Using a pandas approach for aggregation might be cleaner if total_n_tag_keywords is large,
-    # but raw numpy is likely faster given the likely scale.
+    # total_n_tag_keywords が大きい場合、集計に pandas アプローチを使用する方がきれいかもしれませんが、
+    # 想定される規模を考えると生 numpy がおそらく高速です。
     
-    # Iterate over columns of raw_similarity_matrix and update max score for the corresponding tag
+    # raw_similarity_matrix の列を反復処理し、対応するタグの最大スコアを更新
     for col_idx, tag_idx in enumerate(text_to_tag_index):
         aggregated_scores[:, tag_idx] = np.maximum(aggregated_scores[:, tag_idx], raw_similarity_matrix[:, col_idx])
 
-    # 5. Create DataFrame
+    # 5. DataFrame の作成
     tag_names = [t['name'] for t in tags]
     scores_df = pd.DataFrame(aggregated_scores, columns=tag_names)
     
-    # Clip values to 0.0 - 1.0
+    # 値を 0.0 - 1.0 にクリップ
     scores_df = scores_df.clip(0.0, 1.0)
 
     return scores_df, text_embeddings
