@@ -66,5 +66,5 @@ uv run gradio_app.py
     - `visualization.py`: 可視化処理
     - `analysis.py`: 分析ユーティリティ
 - `data/`: データファイル用ディレクトリ（入力CSVや出力結果）
-- `tags.json`: タグ定義のサンプルファイル
+- `data/tags.json`: タグ定義ファイルのサンプルファイル
 - `pyproject.toml`: プロジェクト設定・依存ライブラリ一覧

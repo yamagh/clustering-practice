@@ -16,7 +16,7 @@ def main():
     # パス設定
     input_path = 'data/input.csv'
     output_path = 'data/output.csv'
-    tags_path = 'tags.json'
+    tags_path = "data/tags.json"
     vis_output_path = 'data/cluster_visualization.png'
 
     print("データを読み込んでいます...")

@@ -2,12 +2,26 @@ import pandas as pd
 import json
 import os
 from gradio_app import process_clustering
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
+import numpy as np
 
-def test_process_clustering():
+@patch('gradio_app.visualize_clusters_interactive')
+@patch('gradio_app.run_clustering_pipeline')
+def test_process_clustering(mock_run_pipeline, mock_visualize):
+    # Setup mock return values
+    dummy_df = pd.DataFrame({'col': [1, 2]})
+    dummy_plot = "gradio_output_plot.png"
+    dummy_embeddings = np.array([[0.1, 0.2], [0.3, 0.4]])
+    # Create dummy plot file
+    with open(dummy_plot, 'w') as f:
+        f.write("dummy")
+        
+    mock_run_pipeline.return_value = (dummy_df, dummy_plot, dummy_embeddings)
+    mock_visualize.return_value = "dummy_figure_object"
+
     # Setup dummy inputs
     csv_path = 'data/input.csv'
-    tags_path = 'tags.json'
+    tags_path = 'data/tags.json'
     
     # Mock file object for CSV
     mock_csv = MagicMock()
@@ -19,12 +33,12 @@ def test_process_clustering():
     
     # 1. Test with CSV and Tags File
     print("Testing with Tags File...")
-    valid_result = process_clustering(mock_csv, None, mock_tags)
+    valid_result = process_clustering(mock_csv, None, mock_tags, model_name="dummy_model", normalize=True)
     df, csv_out, plot_out = valid_result
     
     assert isinstance(df, pd.DataFrame)
     assert os.path.exists(csv_out)
-    assert os.path.exists(plot_out)
+    assert plot_out == "dummy_figure_object"
     print("Pass: Tags File")
 
     # 2. Test with CSV and Tags Text
@@ -32,7 +46,7 @@ def test_process_clustering():
     with open(tags_path, 'r') as f:
         tags_text = f.read()
         
-    valid_result_text = process_clustering(mock_csv, tags_text, None)
+    valid_result_text = process_clustering(mock_csv, tags_text, None, model_name="dummy_model", normalize=True)
     df2, csv_out2, plot_out2 = valid_result_text
     
     assert isinstance(df2, pd.DataFrame)
