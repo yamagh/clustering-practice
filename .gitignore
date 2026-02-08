@@ -3,3 +3,4 @@ node_modules
 .DS_Store
 gradio_output_plot.png
 gradio_output.csv
+src/__pycache__/*

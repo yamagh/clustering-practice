@@ -31,7 +31,7 @@ Gradioを用いたWeb UIを提供しており、直感的な操作でデータ�
 リポジトリをクローンし、必要なライブラリをインストールしてください。
 
 ```bash
-pip install -r requirements.txt
+uv sync
 ```
 
 ## 使い方
@@ -41,7 +41,7 @@ pip install -r requirements.txt
 以下のコマンドを実行して Gradio アプリケーションを起動します。
 
 ```bash
-python gradio_app.py
+uv run gradio_app.py
 ```
 
 起動後、ターミナルに表示されるURL（例: `http://0.0.0.0:7860`）にブラウザでアクセスしてください。
@@ -67,4 +67,4 @@ python gradio_app.py
     - `analysis.py`: 分析ユーティリティ
 - `data/`: データファイル用ディレクトリ（入力CSVや出力結果）
 - `tags.json`: タグ定義のサンプルファイル
-- `requirements.txt`: 依存ライブラリ一覧
+- `pyproject.toml`: プロジェクト設定・依存ライブラリ一覧

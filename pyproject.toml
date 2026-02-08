@@ -1,0 +1,20 @@
+[project]
+name = "clustering-practice"
+version = "0.1.0"
+description = "Clustering practice project"
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "pandas",
+    "numpy",
+    "scikit-learn",
+    "matplotlib",
+    "sentence-transformers",
+    "gradio",
+    "plotly",
+    "japanize-matplotlib",
+    "umap-learn",
+    "protobuf",
+    "sentencepiece",
+    "numba>=0.57",
+]
